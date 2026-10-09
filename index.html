@@ -21,7 +21,8 @@
   --bg: #0c1116; --field: #18222a; --fg: #e8eef2; --muted: #93a3af; --line: #26333d; --focus: #7dbbd8; color-scheme: dark;
 }
 * { box-sizing: border-box; }
-html, body { height: 100%; margin: 0; }
+html { height: 100%; }
+body { min-height: 100%; margin: 0; }
 body {
   background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 15px;
   display: flex; flex-direction: column; gap: 20px;
@@ -36,7 +37,7 @@ button.link {
   text-decoration: underline; text-underline-offset: 3px; cursor: pointer;
 }
 button:focus-visible, input:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
-main { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; min-height: 0; }
+main { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 @media (max-width: 620px) { main { grid-template-columns: 1fr; } }
 
 /* Each panel is its own sky. The gradient is set from the weather; the canvas draws what's falling or drifting. */
