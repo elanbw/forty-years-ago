@@ -316,7 +316,7 @@ async function getJSON(url) {
   return r.json();
 }
 
-async function load(lat, lon, name) {
+async function load(lat, lon, name, here = false) {
   $("place").textContent = name || `${lat.toFixed(2)}°, ${lon.toFixed(2)}°`;
   $("diff").textContent = "Loading…";
   try {
@@ -348,10 +348,20 @@ async function load(lat, lon, name) {
     const d = Math.round(now.current.temperature_2m) - Math.round(tThen);
     $("diff").textContent = d === 0 ? "Same temperature as this hour 40 years ago."
       : `${Math.abs(d)}° ${d > 0 ? "warmer" : "cooler"} than this hour 40 years ago.`;
-    try { localStorage.setItem("place", JSON.stringify({ lat, lon, name })); } catch {}
+    try { localStorage.setItem("place", JSON.stringify({ lat, lon, name, here })); } catch {}
   } catch (e) {
     $("diff").textContent = "Couldn't load the weather. Check your connection and reload.";
   }
+}
+
+// Turn coordinates into "Boulder, Colorado". Open-Meteo can't do this, so it uses BigDataCloud's free browser lookup.
+async function placeName(lat, lon) {
+  try {
+    const g = await getJSON(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`);
+    const town = g.city || g.locality;
+    const region = g.countryCode === "US" ? g.principalSubdivision : g.countryName;
+    return [town, region].filter(Boolean).join(", ") || "Your location";
+  } catch { return "Your location"; }
 }
 
 // Ask the browser where we are. If that fails, say so in the box, or fall back to Boulder on startup.
@@ -361,7 +371,12 @@ function locate(onFail) {
   if (!navigator.geolocation) return fail();
   btn.setAttribute("aria-busy", "true");
   navigator.geolocation.getCurrentPosition(
-    p => { btn.removeAttribute("aria-busy"); $("search").hidden = true; load(p.coords.latitude, p.coords.longitude, "Your location"); },
+    async p => {
+      const { latitude: lat, longitude: lon } = p.coords;
+      $("search").hidden = true;
+      load(lat, lon, await placeName(lat, lon), true);
+      btn.removeAttribute("aria-busy");
+    },
     () => { btn.removeAttribute("aria-busy"); fail(); },
     { timeout: 10000, maximumAge: 600000 });
 }
@@ -385,7 +400,7 @@ let saved = null;
 try { saved = JSON.parse(localStorage.getItem("place")); } catch {}
 // Start on Boulder until someone picks another city. If they last used their location, look it up again.
 const boulder = () => load(40.015, -105.2705, "Boulder, Colorado");
-if (saved && saved.name === "Your location") { boulder(); locate(() => {}); }
+if (saved && (saved.here || saved.name === "Your location")) { boulder(); locate(() => {}); }
 else if (saved) load(saved.lat, saved.lon, saved.name);
 else boulder();
 </script>
