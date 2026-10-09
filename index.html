@@ -38,7 +38,6 @@ button.link {
 }
 button:focus-visible, input:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
 main { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-@media (max-width: 620px) { main { grid-template-columns: 1fr; } }
 
 /* Each panel is its own sky. The gradient is set from the weather; the canvas draws what's falling or drifting. */
 .panel {
@@ -67,6 +66,21 @@ input {
 }
 form button { font: inherit; font-weight: 600; color: var(--bg); background: var(--fg); border: 0; border-radius: 6px; padding: 8px 14px; cursor: pointer; }
 [hidden] { display: none !important; }
+
+/* On a phone the panels stay side by side, so everything inside them tightens up. */
+@media (max-width: 620px) {
+  body { padding-inline: 16px; }
+  main { gap: 10px; }
+  .content { padding: 18px 14px; gap: 18px; }
+  .label { font-size: 11px; letter-spacing: 0.08em; }
+  .date { font-size: 13px; }
+  .temp { font-size: clamp(44px, 15vw, 88px); }
+  .cond { font-size: 14px; margin-top: 6px; }
+  .stats { flex-direction: column; gap: 6px; padding-top: 12px; font-size: 13px; }
+  .stats div { display: flex; justify-content: space-between; align-items: baseline; }
+  .stats span { margin-right: 6px; }
+  .stats b { font-size: 16px; white-space: nowrap; }
+}
 </style>
 </head>
 <body>
