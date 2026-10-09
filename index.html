@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Forty Years Ago</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;600&display=swap">
+<style>
+/* Layout: two equal sky panels side by side, stacked on a phone; one quiet line beneath. */
+:root {
+  --bg: #e9eef2; --field: #f7f9fb; --fg: #17222b; --muted: #5d6c78; --line: #d3dce3; --focus: #2f6f8f;
+  --sky-ink: #ffffff; --sky-rule: rgba(255,255,255,.28);
+  --font: "Manrope", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0c1116; --field: #18222a; --fg: #e8eef2; --muted: #93a3af; --line: #26333d; --focus: #7dbbd8; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0c1116; --field: #18222a; --fg: #e8eef2; --muted: #93a3af; --line: #26333d; --focus: #7dbbd8; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 15px;
+  display: flex; flex-direction: column; gap: 20px;
+  padding-inline: 20px;
+  padding-top: calc(24px + env(safe-area-inset-top, 0px));
+  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+}
+header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+#place { font-weight: 600; }
+button.link {
+  font: inherit; color: var(--muted); background: none; border: 0; padding: 0;
+  text-decoration: underline; text-underline-offset: 3px; cursor: pointer;
+}
+button:focus-visible, input:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+main { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; min-height: 0; }
+@media (max-width: 620px) { main { grid-template-columns: 1fr; } }
+
+/* Each panel is its own sky. The gradient is set from the weather; the canvas draws what's falling or drifting. */
+.panel {
+  --top: #55626e; --bottom: #8b97a1;
+  position: relative; overflow: hidden; border-radius: 10px; min-width: 0; min-height: 300px;
+  background: linear-gradient(180deg, var(--top), var(--bottom));
+  color: var(--sky-ink); text-shadow: 0 1px 12px rgba(0,0,0,.28);
+  transition: --top 1s, --bottom 1s;
+}
+.panel canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.content { position: relative; height: 100%; padding: 28px; display: flex; flex-direction: column; justify-content: space-between; gap: 24px; }
+.label { text-transform: uppercase; letter-spacing: 0.12em; font-size: 12px; font-weight: 600; }
+.date { opacity: .85; margin-top: 4px; }
+.temp { font-weight: 300; font-size: clamp(88px, 17vw, 190px); line-height: 0.9; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
+.cond { margin-top: 10px; font-size: 17px; }
+.stats { display: flex; flex-wrap: wrap; gap: 12px 28px; border-top: 1px solid var(--sky-rule); padding-top: 16px; font-variant-numeric: tabular-nums; }
+.stats span { opacity: .85; margin-right: 8px; }
+.stats b { font-weight: 600; font-size: 20px; }
+#diff { color: var(--muted); text-align: center; min-height: 1.4em; }
+footer { text-align: center; font-size: 12px; margin-top: -8px; }
+footer a { color: var(--muted); text-underline-offset: 3px; }
+form { display: flex; gap: 8px; flex-wrap: wrap; }
+input {
+  font: inherit; color: var(--fg); background: var(--field); border: 1px solid var(--line);
+  border-radius: 6px; padding: 8px 10px; min-width: 0; flex: 1 1 180px;
+}
+form button { font: inherit; font-weight: 600; color: var(--bg); background: var(--fg); border: 0; border-radius: 6px; padding: 8px 14px; cursor: pointer; }
+[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<header>
+  <div id="place">Finding where you are…</div>
+  <button class="link" id="change" type="button">Change location</button>
+</header>
+
+<form id="search" hidden>
+  <input id="city" type="text" placeholder="City, e.g. Boulder" autocomplete="off" aria-label="City">
+  <button type="submit">Show weather</button>
+</form>
+
+<main>
+  <section class="panel" id="nowPanel" aria-label="Today">
+    <canvas aria-hidden="true"></canvas>
+    <div class="content">
+      <div><div class="label">Right now</div><div class="date" id="nowDate">&nbsp;</div></div>
+      <div><div class="temp" id="nowTemp">–</div><div class="cond" id="nowCond">&nbsp;</div></div>
+      <div class="stats">
+        <div><span>High</span><b id="nowHi">–</b></div>
+        <div><span>Low</span><b id="nowLo">–</b></div>
+        <div><span>Precip so far</span><b id="nowRain">–</b></div>
+      </div>
+    </div>
+  </section>
+  <section class="panel" id="thenPanel" aria-label="Forty years ago">
+    <canvas aria-hidden="true"></canvas>
+    <div class="content">
+      <div><div class="label">40 years ago</div><div class="date" id="thenDate">&nbsp;</div></div>
+      <div><div class="temp" id="thenTemp">–</div><div class="cond" id="thenCond">&nbsp;</div></div>
+      <div class="stats">
+        <div><span>High</span><b id="thenHi">–</b></div>
+        <div><span>Low</span><b id="thenLo">–</b></div>
+        <div><span>Precip so far</span><b id="thenRain">–</b></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="diff" role="status"></div>
+<footer><a href="https://open-meteo.com/" target="_blank" rel="noopener">Weather data by Open-Meteo.com</a></footer>
+
+<script>
+const YEARS_BACK = 40;
+const UNIT = "fahrenheit";   // or "celsius"
+const RAIN_UNIT = "inch";    // or "mm"
+const $ = id => document.getElementById(id);
+
+const WMO = {0:"Clear",1:"Mostly clear",2:"Partly cloudy",3:"Overcast",45:"Fog",48:"Freezing fog",
+  51:"Light drizzle",53:"Drizzle",55:"Heavy drizzle",56:"Freezing drizzle",57:"Freezing drizzle",
+  61:"Light rain",63:"Rain",65:"Heavy rain",66:"Freezing rain",67:"Freezing rain",
+  71:"Light snow",73:"Snow",75:"Heavy snow",77:"Snow grains",80:"Light showers",81:"Showers",82:"Heavy showers",
+  85:"Snow showers",86:"Heavy snow showers",95:"Thunderstorm",96:"Thunderstorm with hail",99:"Thunderstorm with hail"};
+const deg = v => (v == null ? "–" : Math.round(v) + "°");
+const cond = c => WMO[c] ?? "";
+const pretty = iso => {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+};
+
+// Each hourly value is the total for the hour ending at that time, so hours 1..h cover midnight to now.
+function precipSoFar(hourly, hour) {
+  let sum = 0;
+  for (let i = 1; i <= hour; i++) sum += hourly[i] || 0;
+  if (RAIN_UNIT === "inch") return sum < 0.005 ? "0 in" : sum.toFixed(2) + " in";
+  return sum < 0.05 ? "0 mm" : sum.toFixed(1) + " mm";
+}
+
+// Same calendar day, 40 years earlier. Feb 29 falls back to Feb 28 when that year has none.
+function pastDate(iso) {
+  const [y, m, d] = iso.split("-").map(Number);
+  const py = y - YEARS_BACK;
+  const leap = (py % 4 === 0 && py % 100 !== 0) || py % 400 === 0;
+  const pd = (m === 2 && d === 29 && !leap) ? 28 : d;
+  return `${py}-${String(m).padStart(2, "0")}-${String(pd).padStart(2, "0")}`;
+}
+
+/* ---------- Skies ---------- */
+// What a weather code looks like: sky colors plus how much cloud, rain and snow to draw.
+function sceneFor(code, isDay) {
+  const s = { clouds: 0, rain: 0, snow: 0, stars: false, sun: false, flash: false, day: isDay };
+  let sky;
+  if (code <= 1)            { sky = isDay ? ["#1f6fb8", "#6fb1e4"] : ["#0a1230", "#26335f"]; s.sun = isDay; s.stars = !isDay; s.clouds = code; }
+  else if (code === 2)      { sky = isDay ? ["#3a78b0", "#8fb6d6"] : ["#121a36", "#333e60"]; s.sun = isDay; s.stars = !isDay; s.clouds = 5; }
+  else if (code === 3)      { sky = isDay ? ["#5b6b7a", "#94a1ac"] : ["#1b2129", "#3a434d"]; s.clouds = 11; }
+  else if (code <= 48)      { sky = isDay ? ["#66717a", "#98a2a9"] : ["#1b2129", "#3a434d"]; s.clouds = 16; }
+  else if (code >= 95)      { sky = ["#1d2230", "#454a5c"]; s.clouds = 12; s.rain = 260; s.flash = true; }
+  else if ((code >= 71 && code <= 77) || code >= 85) {
+    sky = isDay ? ["#5f7086", "#9aa9ba"] : ["#1c2433", "#4a556a"]; s.clouds = 8;
+    s.snow = { 71: 60, 73: 130, 75: 240, 77: 60, 85: 110, 86: 240 }[code] || 100;
+  } else {
+    sky = isDay ? ["#3d4c5c", "#6c7c8b"] : ["#141b24", "#2e3944"]; s.clouds = 9;
+    s.rain = { 51: 30, 53: 50, 55: 80, 56: 50, 57: 80, 61: 80, 63: 170, 65: 300, 66: 120, 67: 200, 80: 80, 81: 170, 82: 300 }[code] || 120;
+  }
+  s.sky = sky;
+  return s;
+}
+
+const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const rnd = (a, b) => a + Math.random() * (b - a);
+
+class Sky {
+  constructor(panel) {
+    this.panel = panel; this.canvas = panel.querySelector("canvas"); this.ctx = this.canvas.getContext("2d");
+    this.scene = null; this.flash = 0;
+    new ResizeObserver(() => this.resize()).observe(panel);
+    this.resize();
+  }
+  resize() {
+    const r = this.panel.getBoundingClientRect(), dpr = Math.min(devicePixelRatio || 1, 2);
+    this.w = r.width; this.h = r.height;
+    this.canvas.width = Math.round(r.width * dpr); this.canvas.height = Math.round(r.height * dpr);
+    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (still) this.draw(0);
+  }
+  set(scene) {
+    this.scene = scene;
+    this.panel.style.setProperty("--top", scene.sky[0]);
+    this.panel.style.setProperty("--bottom", scene.sky[1]);
+    // Positions are fractions of the panel, so they survive a resize.
+    this.clouds = Array.from({ length: scene.clouds }, () => ({ x: rnd(-0.2, 1.2), y: rnd(0, 0.55), r: rnd(0.18, 0.42), v: rnd(0.004, 0.012), a: rnd(0.10, 0.22) }));
+    this.drops  = Array.from({ length: scene.rain },   () => ({ x: rnd(0, 1.1), y: rnd(0, 1), v: rnd(0.9, 1.5), l: rnd(10, 22) }));
+    this.flakes = Array.from({ length: scene.snow },   () => ({ x: rnd(0, 1), y: rnd(0, 1), v: rnd(0.05, 0.14), r: rnd(1, 3), p: rnd(0, 6.28) }));
+    this.stars  = scene.stars ? Array.from({ length: 70 }, () => ({ x: rnd(0, 1), y: rnd(0, 0.75), r: rnd(0.4, 1.3), p: rnd(0, 6.28) })) : [];
+    this.draw(0);
+  }
+  draw(dt, t = 0) {
+    const { ctx, w, h, scene: s } = this;
+    ctx.clearRect(0, 0, w, h);
+    if (!s) return;
+    if (s.sun) {
+      const g = ctx.createRadialGradient(w * 0.84, h * 0.14, 0, w * 0.84, h * 0.14, Math.max(w, h) * 0.55);
+      g.addColorStop(0, "rgba(255,244,214,.85)"); g.addColorStop(0.12, "rgba(255,236,190,.35)"); g.addColorStop(1, "rgba(255,236,190,0)");
+      ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+    }
+    for (const st of this.stars) {
+      ctx.fillStyle = `rgba(255,255,255,${0.45 + 0.4 * Math.sin(t / 900 + st.p)})`;
+      ctx.beginPath(); ctx.arc(st.x * w, st.y * h, st.r, 0, 6.29); ctx.fill();
+    }
+    const tint = s.day ? "255,255,255" : "150,165,190";
+    for (const c of this.clouds) {
+      c.x += c.v * dt; if (c.x - c.r > 1.2) c.x = -0.2 - c.r;
+      const R = c.r * Math.max(w, 320), g = ctx.createRadialGradient(c.x * w, c.y * h, 0, c.x * w, c.y * h, R);
+      g.addColorStop(0, `rgba(${tint},${c.a})`); g.addColorStop(1, `rgba(${tint},0)`);
+      ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(c.x * w, c.y * h, R, R * 0.6, 0, 0, 6.29); ctx.fill();
+    }
+    if (this.drops.length) {
+      ctx.strokeStyle = "rgba(220,232,245,.5)"; ctx.lineWidth = 1.1; ctx.beginPath();
+      for (const d of this.drops) {
+        d.y += d.v * dt; d.x -= d.v * dt * 0.12; if (d.y > 1.05) { d.y = -0.05; d.x = rnd(0, 1.1); }
+        ctx.moveTo(d.x * w, d.y * h); ctx.lineTo(d.x * w - d.l * 0.14, d.y * h + d.l);
+      }
+      ctx.stroke();
+    }
+    if (this.flakes.length) {
+      ctx.fillStyle = "rgba(255,255,255,.85)";
+      for (const f of this.flakes) {
+        f.y += f.v * dt; f.x += Math.sin(t / 1400 + f.p) * 0.02 * dt; if (f.y > 1.03) { f.y = -0.03; f.x = rnd(0, 1); }
+        ctx.beginPath(); ctx.arc(f.x * w, f.y * h, f.r, 0, 6.29); ctx.fill();
+      }
+    }
+    if (s.flash && !still) {
+      if (this.flash <= 0 && Math.random() < dt / 7) this.flash = 1;
+      if (this.flash > 0) { ctx.fillStyle = `rgba(235,240,255,${this.flash * 0.45})`; ctx.fillRect(0, 0, w, h); this.flash -= dt * 4; }
+    }
+  }
+}
+
+const skies = { now: new Sky($("nowPanel")), then: new Sky($("thenPanel")) };
+if (!still) {
+  let last = performance.now();
+  requestAnimationFrame(function tick(t) {
+    const dt = Math.min((t - last) / 1000, 0.05); last = t;
+    if (!document.hidden) { skies.now.draw(dt, t); skies.then.draw(dt, t); }
+    requestAnimationFrame(tick);
+  });
+}
+
+/* ---------- Data ---------- */
+async function getJSON(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error("Weather service returned " + r.status);
+  return r.json();
+}
+
+async function load(lat, lon, name) {
+  $("place").textContent = name || `${lat.toFixed(2)}°, ${lon.toFixed(2)}°`;
+  $("diff").textContent = "Loading…";
+  try {
+    const q = `latitude=${lat}&longitude=${lon}&temperature_unit=${UNIT}&precipitation_unit=${RAIN_UNIT}&timezone=auto`;
+    const now = await getJSON(`https://api.open-meteo.com/v1/forecast?${q}` +
+      `&current=temperature_2m,weather_code,is_day&hourly=precipitation&daily=temperature_2m_max,temperature_2m_min&forecast_days=1`);
+    const [today, clock] = now.current.time.split("T");
+    const hour = Number(clock.slice(0, 2));
+    $("nowDate").textContent = pretty(today);
+    $("nowTemp").textContent = deg(now.current.temperature_2m);
+    $("nowCond").textContent = cond(now.current.weather_code);
+    $("nowHi").textContent = deg(now.daily.temperature_2m_max[0]);
+    $("nowLo").textContent = deg(now.daily.temperature_2m_min[0]);
+    $("nowRain").textContent = precipSoFar(now.hourly.precipitation, hour);
+    skies.now.set(sceneFor(now.current.weather_code, now.current.is_day !== 0));
+
+    const past = pastDate(today);
+    $("thenDate").textContent = pretty(past);
+    const then = await getJSON(`https://archive-api.open-meteo.com/v1/archive?${q}` +
+      `&start_date=${past}&end_date=${past}&hourly=temperature_2m,weather_code,is_day,precipitation&daily=temperature_2m_max,temperature_2m_min`);
+    const tThen = then.hourly.temperature_2m[hour];
+    $("thenTemp").textContent = deg(tThen);
+    $("thenCond").textContent = cond(then.hourly.weather_code[hour]);
+    $("thenHi").textContent = deg(then.daily.temperature_2m_max[0]);
+    $("thenLo").textContent = deg(then.daily.temperature_2m_min[0]);
+    $("thenRain").textContent = precipSoFar(then.hourly.precipitation, hour);
+    skies.then.set(sceneFor(then.hourly.weather_code[hour] ?? 3, then.hourly.is_day[hour] !== 0));
+
+    const d = Math.round(now.current.temperature_2m) - Math.round(tThen);
+    $("diff").textContent = d === 0 ? "Same temperature as this hour 40 years ago."
+      : `${Math.abs(d)}° ${d > 0 ? "warmer" : "cooler"} than this hour 40 years ago.`;
+    try { localStorage.setItem("place", JSON.stringify({ lat, lon, name })); } catch {}
+  } catch (e) {
+    $("diff").textContent = "Couldn't load the weather. Check your connection and reload.";
+  }
+}
+
+function askCity(msg) {
+  $("place").textContent = msg;
+  $("search").hidden = false;
+  $("city").focus();
+}
+
+function locate() {
+  if (!navigator.geolocation) return askCity("Enter a city");
+  navigator.geolocation.getCurrentPosition(
+    p => load(p.coords.latitude, p.coords.longitude, "Your location"),
+    () => askCity("Location is off. Enter a city instead."),
+    { timeout: 10000, maximumAge: 600000 });
+}
+
+$("change").addEventListener("click", () => { $("search").hidden = !$("search").hidden; if (!$("search").hidden) $("city").focus(); });
+$("search").addEventListener("submit", async e => {
+  e.preventDefault();
+  const name = $("city").value.trim();
+  if (!name) return;
+  try {
+    const g = await getJSON(`https://geocoding-api.open-meteo.com/v1/search?count=1&name=${encodeURIComponent(name)}`);
+    const hit = g.results && g.results[0];
+    if (!hit) { $("place").textContent = `No place found for "${name}". Try another spelling.`; return; }
+    $("search").hidden = true;
+    load(hit.latitude, hit.longitude, [hit.name, hit.admin1].filter(Boolean).join(", "));
+  } catch { $("place").textContent = "Couldn't look up that city. Check your connection."; }
+});
+
+let saved = null;
+try { saved = JSON.parse(localStorage.getItem("place")); } catch {}
+if (saved && saved.name !== "Your location") load(saved.lat, saved.lon, saved.name); else locate();
+</script>
+</body>
+</html>
