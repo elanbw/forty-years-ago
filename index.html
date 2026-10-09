@@ -47,23 +47,20 @@ main { flex: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
   color: var(--sky-ink); text-shadow: 0 1px 12px rgba(0,0,0,.28);
   transition: --top 1s, --bottom 1s;
 }
-/* The past plays back like an old VHS tape: scanlines, static, color fringing and a rolling tracking band. */
+/* The past plays back like an old VHS tape: scanlines, static and color fringing. */
 #thenPanel { filter: saturate(0.8) contrast(1.08) sepia(0.15) hue-rotate(-6deg); }
 #thenPanel canvas { filter: blur(0.6px); }
 #thenPanel .content {
   font-family: "VT323", ui-monospace, monospace;
   text-shadow: -2px 0 rgba(255,40,90,.55), 2px 0 rgba(40,220,255,.5), 0 1px 10px rgba(0,0,0,.35);
-  animation: vhs-jitter 6s steps(1) infinite;
 }
 #thenPanel .label { font-size: 20px; letter-spacing: 0.08em; font-weight: 400; }
 #thenPanel .date, #thenPanel .cond { font-size: 24px; }
 #thenPanel .temp { font-weight: 400; letter-spacing: 0; }
 #thenPanel .stats { font-size: 22px; }
 #thenPanel .stats b { font-weight: 400; font-size: 28px; }
-.osd { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-.play { font-size: 22px; letter-spacing: 0.06em; animation: vhs-blink 1.6s steps(1) infinite; white-space: nowrap; }
-#thenPanel::before, #thenPanel::after { content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit; z-index: 1; }
 #thenPanel::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit; z-index: 1;
   background:
     repeating-linear-gradient(180deg, rgba(0,0,0,0) 0 2px, rgba(0,0,0,.22) 2px 3px),
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
@@ -71,19 +68,8 @@ main { flex: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
   box-shadow: inset 0 0 60px rgba(0,0,0,.45);
   animation: vhs-static .4s steps(4) infinite;
 }
-#thenPanel::before {
-  height: 14%; bottom: auto; border-radius: 0;
-  background: linear-gradient(180deg, rgba(255,255,255,0), rgba(255,255,255,.14) 45%, rgba(255,255,255,.22) 50%, rgba(255,255,255,.14) 55%, rgba(255,255,255,0));
-  animation: vhs-track 7s linear infinite;
-}
-@keyframes vhs-track { from { transform: translateY(-120%); } to { transform: translateY(820%); } }
 @keyframes vhs-static { 0% { background-position: 0 0, 0 0; } 25% { background-position: 0 0, -40px 30px; } 50% { background-position: 0 0, 50px -20px; } 75% { background-position: 0 0, -20px -60px; } }
-@keyframes vhs-jitter { 0%, 100% { transform: none; } 92% { transform: translateX(2px); } 94% { transform: translateX(-3px); } 96% { transform: none; } }
-@keyframes vhs-blink { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
-@media (prefers-reduced-motion: reduce) {
-  #thenPanel::before { display: none; }
-  #thenPanel::after, #thenPanel .content, .play { animation: none; }
-}
+@media (prefers-reduced-motion: reduce) { #thenPanel::after { animation: none; } }
 .panel canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 .content > * { min-width: 0; }
 .content { position: relative; height: 100%; padding: 28px; display: flex; flex-direction: column; justify-content: space-between; gap: 24px; }
@@ -120,7 +106,7 @@ form button { font: inherit; font-weight: 600; color: var(--bg); background: var
   .stats div { display: flex; justify-content: space-between; align-items: baseline; }
   .stats span { margin-right: 6px; }
   .stats b { font-size: 16px; white-space: nowrap; }
-  #thenPanel .label, #thenPanel .play { font-size: 16px; }
+  #thenPanel .label { font-size: 16px; }
   #thenPanel .date, #thenPanel .cond { font-size: 19px; }
   #thenPanel .temp { font-size: clamp(52px, 18vw, 110px); }
   #thenPanel .stats { font-size: 17px; }
@@ -155,7 +141,7 @@ form button { font: inherit; font-weight: 600; color: var(--bg); background: var
   <section class="panel" id="thenPanel" aria-label="Forty years ago">
     <canvas aria-hidden="true"></canvas>
     <div class="content">
-      <div><div class="osd"><div class="label">40 years ago</div><div class="play" aria-hidden="true">&#9654; PLAY</div></div><div class="date" id="thenDate">&nbsp;</div></div>
+      <div><div class="label">40 years ago</div><div class="date" id="thenDate">&nbsp;</div></div>
       <div><div class="temp" id="thenTemp">–</div><div class="cond" id="thenCond">&nbsp;</div></div>
       <div class="stats">
         <div><span>High</span><b id="thenHi">–</b></div>
