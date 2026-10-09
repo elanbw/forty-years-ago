@@ -116,7 +116,7 @@ form button { font: inherit; font-weight: 600; color: var(--bg); background: var
 </head>
 <body>
 <header>
-  <div id="place">Finding where you are…</div>
+  <div id="place">Boulder, Colorado</div>
   <button class="link" id="change" type="button">Change location</button>
 </header>
 
@@ -336,20 +336,6 @@ async function load(lat, lon, name) {
   }
 }
 
-function askCity(msg) {
-  $("place").textContent = msg;
-  $("search").hidden = false;
-  $("city").focus();
-}
-
-function locate() {
-  if (!navigator.geolocation) return askCity("Enter a city");
-  navigator.geolocation.getCurrentPosition(
-    p => load(p.coords.latitude, p.coords.longitude, "Your location"),
-    () => askCity("Location is off. Enter a city instead."),
-    { timeout: 10000, maximumAge: 600000 });
-}
-
 $("change").addEventListener("click", () => { $("search").hidden = !$("search").hidden; if (!$("search").hidden) $("city").focus(); });
 $("search").addEventListener("submit", async e => {
   e.preventDefault();
@@ -366,7 +352,9 @@ $("search").addEventListener("submit", async e => {
 
 let saved = null;
 try { saved = JSON.parse(localStorage.getItem("place")); } catch {}
-if (saved && saved.name !== "Your location") load(saved.lat, saved.lon, saved.name); else locate();
+// Start on Boulder until someone picks another city.
+if (saved && saved.name !== "Your location") load(saved.lat, saved.lon, saved.name);
+else load(40.015, -105.2705, "Boulder, Colorado");
 </script>
 </body>
 </html>
