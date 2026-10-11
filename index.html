@@ -6,7 +6,7 @@
 <title>Forty Years Ago</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;600&family=VT323&display=swap">
 <style>
-/* Layout: two equal sky panels side by side, stacked on a phone; one quiet line beneath. */
+/* Layout: one row per city, each with two equal sky panels side by side and one quiet line beneath. */
 :root {
   --bg: #e9eef2; --field: #f7f9fb; --fg: #17222b; --muted: #5d6c78; --line: #d3dce3; --focus: #2f6f8f;
   --sky-ink: #ffffff; --sky-rule: rgba(255,255,255,.28);
@@ -31,7 +31,7 @@ body {
   padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
 }
 header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
-#place { font-weight: 600; }
+.place { font-weight: 600; }
 button.link {
   font: inherit; color: var(--muted); background: none; border: 0; padding: 0;
   text-decoration: underline; text-underline-offset: 3px; cursor: pointer;
@@ -48,18 +48,18 @@ main { flex: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
   transition: --top 1s, --bottom 1s;
 }
 /* The past plays back like an old VHS tape: scanlines, static and color fringing. */
-#thenPanel { filter: saturate(0.8) contrast(1.08) sepia(0.15) hue-rotate(-6deg); }
-#thenPanel canvas { filter: blur(0.6px); }
-#thenPanel .content {
+.then { filter: saturate(0.8) contrast(1.08) sepia(0.15) hue-rotate(-6deg); }
+.then canvas { filter: blur(0.6px); }
+.then .content {
   font-family: "VT323", ui-monospace, monospace;
   text-shadow: -2px 0 rgba(255,40,90,.55), 2px 0 rgba(40,220,255,.5), 0 1px 10px rgba(0,0,0,.35);
 }
-#thenPanel .label { font-size: 20px; letter-spacing: 0.08em; font-weight: 400; }
-#thenPanel .date, #thenPanel .cond { font-size: 24px; }
-#thenPanel .temp { font-weight: 400; letter-spacing: 0; }
-#thenPanel .stats { font-size: 22px; }
-#thenPanel .stats b { font-weight: 400; font-size: 28px; }
-#thenPanel::after {
+.then .label { font-size: 20px; letter-spacing: 0.08em; font-weight: 400; }
+.then .date, .then .cond { font-size: 24px; }
+.then .temp { font-weight: 400; letter-spacing: 0; }
+.then .stats { font-size: 22px; }
+.then .stats b { font-weight: 400; font-size: 28px; }
+.then::after {
   content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit; z-index: 1;
   background:
     repeating-linear-gradient(180deg, rgba(0,0,0,0) 0 2px, rgba(0,0,0,.22) 2px 3px),
@@ -69,7 +69,7 @@ main { flex: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
   animation: vhs-static .4s steps(4) infinite;
 }
 @keyframes vhs-static { 0% { background-position: 0 0, 0 0; } 25% { background-position: 0 0, -40px 30px; } 50% { background-position: 0 0, 50px -20px; } 75% { background-position: 0 0, -20px -60px; } }
-@media (prefers-reduced-motion: reduce) { #thenPanel::after { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .then::after { animation: none; } }
 .panel canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 .content > * { min-width: 0; }
 .content { position: relative; height: 100%; padding: 28px; display: flex; flex-direction: column; justify-content: space-between; gap: 24px; }
@@ -80,7 +80,7 @@ main { flex: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
 .stats { display: flex; flex-wrap: wrap; gap: 12px 28px; border-top: 1px solid var(--sky-rule); padding-top: 16px; font-variant-numeric: tabular-nums; }
 .stats span { opacity: .85; margin-right: 8px; }
 .stats b { font-weight: 600; font-size: 20px; }
-#diff { color: var(--muted); text-align: center; min-height: 1.4em; }
+.diff { color: var(--muted); text-align: center; min-height: 1.4em; }
 footer { text-align: center; font-size: 12px; margin-top: -8px; }
 footer a { color: var(--muted); text-underline-offset: 3px; }
 form { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -102,6 +102,22 @@ form .locate[aria-busy="true"] svg { animation: locating 1s ease-in-out infinite
 form button.go { font: inherit; font-weight: 600; color: var(--bg); background: var(--fg); border: 0; border-radius: 6px; padding: 8px 14px; cursor: pointer; }
 [hidden] { display: none !important; }
 
+/* Each city is its own row; a thin rule separates them. The first row can't be removed. */
+#rows { display: flex; flex-direction: column; gap: 24px; }
+.row { display: flex; flex-direction: column; gap: 20px; }
+/* A lone city fills the screen, as before; with more, the + sits right under the last one. */
+#rows:has(> .row:only-child), .row:only-child { flex: 1; }
+.row + .row { border-top: 1px solid var(--line); padding-top: 24px; }
+.row:first-child .remove { display: none; }
+header .actions { display: flex; gap: 16px; align-items: baseline; }
+.place.empty { color: var(--muted); font-weight: 400; }
+#add {
+  align-self: center; display: inline-flex; align-items: center; gap: 8px;
+  font: inherit; color: var(--muted); background: none; border: 0; padding: 6px 10px; cursor: pointer; border-radius: 999px;
+}
+#add:hover { color: var(--fg); }
+#add .plus { width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid currentColor; display: grid; place-items: center; font-size: 20px; line-height: 1; }
+
 /* On a phone the panels stay side by side, so everything inside them tightens up. */
 @media (max-width: 620px) {
   body { padding-inline: 16px; }
@@ -116,68 +132,78 @@ form button.go { font: inherit; font-weight: 600; color: var(--bg); background: 
   .stats div { display: flex; justify-content: space-between; align-items: baseline; }
   .stats span { margin-right: 6px; }
   .stats b { font-size: 16px; white-space: nowrap; }
-  #thenPanel .label { font-size: 16px; }
-  #thenPanel .date, #thenPanel .cond { font-size: 19px; }
-  #thenPanel .temp { font-size: clamp(52px, 18vw, 110px); }
-  #thenPanel .stats { font-size: 17px; }
-  #thenPanel .stats b { font-size: 22px; }
+  .then .label { font-size: 16px; }
+  .then .date, .then .cond { font-size: 19px; }
+  .then .temp { font-size: clamp(52px, 18vw, 110px); }
+  .then .stats { font-size: 17px; }
+  .then .stats b { font-size: 22px; }
 }
 </style>
 </head>
 <body>
-<header>
-  <div id="place">Boulder, Colorado</div>
-  <button class="link" id="change" type="button">Change location</button>
-</header>
+<div id="rows"></div>
+<button id="add" type="button"><span class="plus" aria-hidden="true">+</span>Add a city</button>
 
-<form id="search" hidden>
-  <div class="field">
-    <input id="city" type="text" placeholder="City, e.g. Boulder" autocomplete="off" aria-label="City">
-    <button class="locate" id="locate" type="button" aria-label="Use my location" title="Use my location">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true">
-        <circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.6"/>
-        <path d="M12 1.5v3.5M12 19v3.5M1.5 12h3.5M19 12h3.5"/>
-      </svg>
-    </button>
-  </div>
-  <button class="go" type="submit">Show weather</button>
-</form>
-
-<main>
-  <section class="panel" id="nowPanel" aria-label="Today">
-    <canvas aria-hidden="true"></canvas>
-    <div class="content">
-      <div><div class="label">Right now</div><div class="date" id="nowDate">&nbsp;</div></div>
-      <div><div class="temp" id="nowTemp">–</div><div class="cond" id="nowCond">&nbsp;</div></div>
-      <div class="stats">
-        <div><span>High</span><b id="nowHi">–</b></div>
-        <div><span>Low</span><b id="nowLo">–</b></div>
-        <div><span>Precip so far</span><b id="nowRain">–</b></div>
-      </div>
+<template id="rowTpl">
+<section class="row">
+  <header>
+    <div class="place">&nbsp;</div>
+    <div class="actions">
+      <button class="link change" type="button">Change location</button>
+      <button class="link remove" type="button" aria-label="Remove this city">× Remove</button>
     </div>
-  </section>
-  <section class="panel" id="thenPanel" aria-label="Forty years ago">
-    <canvas aria-hidden="true"></canvas>
-    <div class="content">
-      <div><div class="label">40 years ago</div><div class="date" id="thenDate">&nbsp;</div></div>
-      <div><div class="temp" id="thenTemp">–</div><div class="cond" id="thenCond">&nbsp;</div></div>
-      <div class="stats">
-        <div><span>High</span><b id="thenHi">–</b></div>
-        <div><span>Low</span><b id="thenLo">–</b></div>
-        <div><span>Precip so far</span><b id="thenRain">–</b></div>
-      </div>
-    </div>
-  </section>
-</main>
+  </header>
 
-<div id="diff" role="status"></div>
+  <form class="search" hidden>
+    <div class="field">
+      <input class="city" type="text" placeholder="City, e.g. Boulder" autocomplete="off" aria-label="City">
+      <button class="locate" type="button" aria-label="Use my location" title="Use my location">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.6"/>
+          <path d="M12 1.5v3.5M12 19v3.5M1.5 12h3.5M19 12h3.5"/>
+        </svg>
+      </button>
+    </div>
+    <button class="go" type="submit">Show weather</button>
+  </form>
+
+  <main>
+    <section class="panel now" aria-label="Today">
+      <canvas aria-hidden="true"></canvas>
+      <div class="content">
+        <div><div class="label">Right now</div><div class="date">&nbsp;</div></div>
+        <div><div class="temp">–</div><div class="cond">&nbsp;</div></div>
+        <div class="stats">
+          <div><span>High</span><b class="hi">–</b></div>
+          <div><span>Low</span><b class="lo">–</b></div>
+          <div><span>Precip so far</span><b class="rain">–</b></div>
+        </div>
+      </div>
+    </section>
+    <section class="panel then" aria-label="Forty years ago">
+      <canvas aria-hidden="true"></canvas>
+      <div class="content">
+        <div><div class="label">40 years ago</div><div class="date">&nbsp;</div></div>
+        <div><div class="temp">–</div><div class="cond">&nbsp;</div></div>
+        <div class="stats">
+          <div><span>High</span><b class="hi">–</b></div>
+          <div><span>Low</span><b class="lo">–</b></div>
+          <div><span>Precip so far</span><b class="rain">–</b></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="diff" role="status"></div>
+</section>
+</template>
+
 <footer><a href="https://open-meteo.com/" target="_blank" rel="noopener">Weather data by Open-Meteo.com</a></footer>
 
 <script>
 const YEARS_BACK = 40;
 const UNIT = "fahrenheit";   // or "celsius"
 const RAIN_UNIT = "inch";    // or "mm"
-const $ = id => document.getElementById(id);
 
 const WMO = {0:"Clear",1:"Mostly clear",2:"Partly cloudy",3:"Overcast",45:"Fog",48:"Freezing fog",
   51:"Light drizzle",53:"Drizzle",55:"Heavy drizzle",56:"Freezing drizzle",57:"Freezing drizzle",
@@ -232,13 +258,22 @@ function sceneFor(code, isDay) {
 const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const rnd = (a, b) => a + Math.random() * (b - a);
 
+// One animation loop draws every sky that's on screen, so adding cities costs little.
+const skies = new Set();
+const onScreen = new IntersectionObserver(entries => { for (const e of entries) e.target.sky.visible = e.isIntersecting; });
+
 class Sky {
   constructor(panel) {
     this.panel = panel; this.canvas = panel.querySelector("canvas"); this.ctx = this.canvas.getContext("2d");
-    this.scene = null; this.flash = 0;
-    new ResizeObserver(() => this.resize()).observe(panel);
+    this.scene = null; this.flash = 0; this.visible = true;
+    this.clouds = []; this.drops = []; this.flakes = []; this.stars = [];
+    panel.sky = this;
+    this.sizer = new ResizeObserver(() => this.resize()); this.sizer.observe(panel);
+    onScreen.observe(panel);
+    skies.add(this);
     this.resize();
   }
+  destroy() { this.sizer.disconnect(); onScreen.unobserve(this.panel); skies.delete(this); }
   resize() {
     const r = this.panel.getBoundingClientRect(), dpr = Math.min(devicePixelRatio || 1, 2);
     this.w = r.width; this.h = r.height;
@@ -299,12 +334,11 @@ class Sky {
   }
 }
 
-const skies = { now: new Sky($("nowPanel")), then: new Sky($("thenPanel")) };
 if (!still) {
   let last = performance.now();
   requestAnimationFrame(function tick(t) {
     const dt = Math.min((t - last) / 1000, 0.05); last = t;
-    if (!document.hidden) { skies.now.draw(dt, t); skies.then.draw(dt, t); }
+    if (!document.hidden) for (const s of skies) if (s.visible) s.draw(dt, t);
     requestAnimationFrame(tick);
   });
 }
@@ -316,41 +350,54 @@ async function getJSON(url) {
   return r.json();
 }
 
-async function load(lat, lon, name, here = false) {
-  $("place").textContent = name || `${lat.toFixed(2)}°, ${lon.toFixed(2)}°`;
-  $("diff").textContent = "Loading…";
+const rows = [];
+const save = () => {
+  try { localStorage.setItem("places", JSON.stringify(rows.map(r => r.place).filter(Boolean))); } catch {}
+};
+
+async function load(row, lat, lon, name, here = false) {
+  const $ = sel => row.el.querySelector(sel);
+  const now$ = sel => $(".now " + sel), then$ = sel => $(".then " + sel);
+  const ticket = row.ticket = (row.ticket || 0) + 1;   // a newer search in this row wins over a slower older one
+  const stale = () => ticket !== row.ticket || !rows.includes(row);
+  $(".place").classList.remove("empty");
+  $(".place").textContent = name || `${lat.toFixed(2)}°, ${lon.toFixed(2)}°`;
+  $(".diff").textContent = "Loading…";
   try {
     const q = `latitude=${lat}&longitude=${lon}&temperature_unit=${UNIT}&precipitation_unit=${RAIN_UNIT}&timezone=auto`;
     const now = await getJSON(`https://api.open-meteo.com/v1/forecast?${q}` +
       `&current=temperature_2m,weather_code,is_day&hourly=precipitation&daily=temperature_2m_max,temperature_2m_min&forecast_days=1`);
+    if (stale()) return;
     const [today, clock] = now.current.time.split("T");
     const hour = Number(clock.slice(0, 2));
-    $("nowDate").textContent = pretty(today);
-    $("nowTemp").textContent = deg(now.current.temperature_2m);
-    $("nowCond").textContent = cond(now.current.weather_code);
-    $("nowHi").textContent = deg(now.daily.temperature_2m_max[0]);
-    $("nowLo").textContent = deg(now.daily.temperature_2m_min[0]);
-    $("nowRain").textContent = precipSoFar(now.hourly.precipitation, hour);
-    skies.now.set(sceneFor(now.current.weather_code, now.current.is_day !== 0));
+    now$(".date").textContent = pretty(today);
+    now$(".temp").textContent = deg(now.current.temperature_2m);
+    now$(".cond").textContent = cond(now.current.weather_code);
+    now$(".hi").textContent = deg(now.daily.temperature_2m_max[0]);
+    now$(".lo").textContent = deg(now.daily.temperature_2m_min[0]);
+    now$(".rain").textContent = precipSoFar(now.hourly.precipitation, hour);
+    row.skies.now.set(sceneFor(now.current.weather_code, now.current.is_day !== 0));
 
     const past = pastDate(today);
-    $("thenDate").textContent = pretty(past);
+    then$(".date").textContent = pretty(past);
     const then = await getJSON(`https://archive-api.open-meteo.com/v1/archive?${q}` +
       `&start_date=${past}&end_date=${past}&hourly=temperature_2m,weather_code,is_day,precipitation&daily=temperature_2m_max,temperature_2m_min`);
+    if (stale()) return;
     const tThen = then.hourly.temperature_2m[hour];
-    $("thenTemp").textContent = deg(tThen);
-    $("thenCond").textContent = cond(then.hourly.weather_code[hour]);
-    $("thenHi").textContent = deg(then.daily.temperature_2m_max[0]);
-    $("thenLo").textContent = deg(then.daily.temperature_2m_min[0]);
-    $("thenRain").textContent = precipSoFar(then.hourly.precipitation, hour);
-    skies.then.set(sceneFor(then.hourly.weather_code[hour] ?? 3, then.hourly.is_day[hour] !== 0));
+    then$(".temp").textContent = deg(tThen);
+    then$(".cond").textContent = cond(then.hourly.weather_code[hour]);
+    then$(".hi").textContent = deg(then.daily.temperature_2m_max[0]);
+    then$(".lo").textContent = deg(then.daily.temperature_2m_min[0]);
+    then$(".rain").textContent = precipSoFar(then.hourly.precipitation, hour);
+    row.skies.then.set(sceneFor(then.hourly.weather_code[hour] ?? 3, then.hourly.is_day[hour] !== 0));
 
     const d = Math.round(now.current.temperature_2m) - Math.round(tThen);
-    $("diff").textContent = d === 0 ? "Same temperature as this hour 40 years ago."
+    $(".diff").textContent = d === 0 ? "Same temperature as this hour 40 years ago."
       : `${Math.abs(d)}° ${d > 0 ? "warmer" : "cooler"} than this hour 40 years ago.`;
-    try { localStorage.setItem("place", JSON.stringify({ lat, lon, name, here })); } catch {}
+    row.place = { lat, lon, name, here };
+    save();
   } catch (e) {
-    $("diff").textContent = "Couldn't load the weather. Check your connection and reload.";
+    if (!stale()) $(".diff").textContent = "Couldn't load the weather. Check your connection and reload.";
   }
 }
 
@@ -364,45 +411,78 @@ async function placeName(lat, lon) {
   } catch { return "Your location"; }
 }
 
-// Ask the browser where we are. If that fails, say so in the box, or fall back to Boulder on startup.
-function locate(onFail) {
-  const btn = $("locate");
-  const fail = onFail || (() => { $("city").value = ""; $("city").placeholder = "Location is off. Type a city instead."; });
+// Ask the browser where we are. If that fails, say so in the box, or stay quiet on startup.
+function locate(row, onFail) {
+  const btn = row.el.querySelector(".locate"), city = row.el.querySelector(".city");
+  const fail = onFail || (() => { city.value = ""; city.placeholder = "Location is off. Type a city instead."; });
   if (!navigator.geolocation) return fail();
   btn.setAttribute("aria-busy", "true");
   navigator.geolocation.getCurrentPosition(
     async p => {
       const { latitude: lat, longitude: lon } = p.coords;
-      $("search").hidden = true;
-      load(lat, lon, await placeName(lat, lon), true);
+      row.el.querySelector(".search").hidden = true;
+      load(row, lat, lon, await placeName(lat, lon), true);
       btn.removeAttribute("aria-busy");
     },
     () => { btn.removeAttribute("aria-busy"); fail(); },
     { timeout: 10000, maximumAge: 600000 });
 }
 
-$("locate").addEventListener("click", () => locate());
-$("change").addEventListener("click", () => { $("search").hidden = !$("search").hidden; if (!$("search").hidden) $("city").focus(); });
-$("search").addEventListener("submit", async e => {
-  e.preventDefault();
-  const name = $("city").value.trim();
-  if (!name) return;
-  try {
-    const g = await getJSON(`https://geocoding-api.open-meteo.com/v1/search?count=1&name=${encodeURIComponent(name)}`);
-    const hit = g.results && g.results[0];
-    if (!hit) { $("place").textContent = `No place found for "${name}". Try another spelling.`; return; }
-    $("search").hidden = true;
-    load(hit.latitude, hit.longitude, [hit.name, hit.admin1].filter(Boolean).join(", "));
-  } catch { $("place").textContent = "Couldn't look up that city. Check your connection."; }
+// One city: its own search box, two skies and a comparison line.
+function createRow() {
+  const el = document.getElementById("rowTpl").content.firstElementChild.cloneNode(true);
+  document.getElementById("rows").append(el);
+  const $ = sel => el.querySelector(sel);
+  const row = { el, place: null, skies: { now: new Sky($(".now")), then: new Sky($(".then")) } };
+  rows.push(row);
+
+  $(".locate").addEventListener("click", () => locate(row));
+  $(".change").addEventListener("click", () => { $(".search").hidden = !$(".search").hidden; if (!$(".search").hidden) $(".city").focus(); });
+  $(".remove").addEventListener("click", () => {
+    rows.splice(rows.indexOf(row), 1);
+    row.skies.now.destroy(); row.skies.then.destroy();
+    el.remove();
+    save();
+  });
+  $(".search").addEventListener("submit", async e => {
+    e.preventDefault();
+    const name = $(".city").value.trim();
+    if (!name) return;
+    try {
+      const g = await getJSON(`https://geocoding-api.open-meteo.com/v1/search?count=1&name=${encodeURIComponent(name)}`);
+      const hit = g.results && g.results[0];
+      if (!hit) { $(".place").textContent = `No place found for "${name}". Try another spelling.`; return; }
+      $(".search").hidden = true;
+      $(".city").value = "";
+      load(row, hit.latitude, hit.longitude, [hit.name, hit.admin1].filter(Boolean).join(", "));
+    } catch { $(".place").textContent = "Couldn't look up that city. Check your connection."; }
+  });
+  return row;
+}
+
+// The + button adds an empty row with its search box open.
+document.getElementById("add").addEventListener("click", () => {
+  const row = createRow(), $ = sel => row.el.querySelector(sel);
+  $(".place").textContent = "Pick a city to compare.";
+  $(".place").classList.add("empty");
+  $(".search").hidden = false;
+  $(".city").focus({ preventScroll: true });
+  row.el.scrollIntoView({ behavior: still ? "auto" : "smooth", block: "start" });
 });
 
+// Bring back the saved cities; older visits saved just one under "place". Start on Boulder until someone picks another city.
 let saved = null;
-try { saved = JSON.parse(localStorage.getItem("place")); } catch {}
-// Start on Boulder until someone picks another city. If they last used their location, look it up again.
-const boulder = () => load(40.015, -105.2705, "Boulder, Colorado");
-if (saved && (saved.here || saved.name === "Your location")) { boulder(); locate(() => {}); }
-else if (saved) load(saved.lat, saved.lon, saved.name);
-else boulder();
+try { saved = JSON.parse(localStorage.getItem("places")); } catch {}
+if (!Array.isArray(saved)) {
+  try { const one = JSON.parse(localStorage.getItem("place")); saved = one ? [one] : []; } catch { saved = []; }
+}
+if (!saved.length) saved = [{ lat: 40.015, lon: -105.2705, name: "Boulder, Colorado" }];
+for (const p of saved) {
+  const row = createRow();
+  load(row, p.lat, p.lon, p.name, p.here);
+  // If they last used their location, look it up again.
+  if (p.here || p.name === "Your location") locate(row, () => {});
+}
 </script>
 </body>
 </html>
