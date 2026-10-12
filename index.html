@@ -351,8 +351,13 @@ async function getJSON(url) {
 }
 
 const rows = [];
+// Also keep the top city on its own, so a lost list still opens on it rather than Boulder.
 const save = () => {
-  try { localStorage.setItem("places", JSON.stringify(rows.map(r => r.place).filter(Boolean))); } catch {}
+  const places = rows.map(r => r.place).filter(Boolean);
+  try {
+    localStorage.setItem("places", JSON.stringify(places));
+    if (places.length) localStorage.setItem("top", JSON.stringify(places[0]));
+  } catch {}
 };
 
 async function load(row, lat, lon, name, here = false) {
@@ -363,6 +368,9 @@ async function load(row, lat, lon, name, here = false) {
   $(".place").classList.remove("empty");
   $(".place").textContent = name || `${lat.toFixed(2)}°, ${lon.toFixed(2)}°`;
   $(".diff").textContent = "Loading…";
+  // Remember the city before fetching, so a slow or failed load doesn't drop it from the saved list.
+  row.place = { lat, lon, name, here };
+  save();
   try {
     const q = `latitude=${lat}&longitude=${lon}&temperature_unit=${UNIT}&precipitation_unit=${RAIN_UNIT}&timezone=auto`;
     const now = await getJSON(`https://api.open-meteo.com/v1/forecast?${q}` +
@@ -394,8 +402,6 @@ async function load(row, lat, lon, name, here = false) {
     const d = Math.round(now.current.temperature_2m) - Math.round(tThen);
     $(".diff").textContent = d === 0 ? "Same temperature as this hour 40 years ago."
       : `${Math.abs(d)}° ${d > 0 ? "warmer" : "cooler"} than this hour 40 years ago.`;
-    row.place = { lat, lon, name, here };
-    save();
   } catch (e) {
     if (!stale()) $(".diff").textContent = "Couldn't load the weather. Check your connection and reload.";
   }
@@ -470,11 +476,13 @@ document.getElementById("add").addEventListener("click", () => {
   row.el.scrollIntoView({ behavior: still ? "auto" : "smooth", block: "start" });
 });
 
-// Bring back the saved cities; older visits saved just one under "place". Start on Boulder until someone picks another city.
-let saved = null;
-try { saved = JSON.parse(localStorage.getItem("places")); } catch {}
-if (!Array.isArray(saved)) {
-  try { const one = JSON.parse(localStorage.getItem("place")); saved = one ? [one] : []; } catch { saved = []; }
+// Bring back the saved cities. If the list is gone, fall back to the top city, then to what older visits saved
+// under "place", then to Boulder. Read everything before the first row loads, since loading saves over it.
+const read = key => { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } };
+let saved = read("places");
+if (!Array.isArray(saved) || !saved.length) {
+  const one = read("top") || read("place");
+  saved = one ? [one] : [];
 }
 if (!saved.length) saved = [{ lat: 40.015, lon: -105.2705, name: "Boulder, Colorado" }];
 for (const p of saved) {
