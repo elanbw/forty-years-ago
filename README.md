@@ -8,9 +8,9 @@ Today's weather, side by side with the same hour forty years ago.
 
 ## What it does
 
-Open the page and you see two panels for your city. On the left is the weather right now. On the right is the weather at the same hour on the same date forty years ago, styled like an old VHS tape. A line underneath tells you how much warmer or cooler it is than it was then.
+Open the page and you see two panels for your city. On the left is the weather right now. On the right is the weather at the same hour on the same date forty years ago. A line underneath tells you how much warmer or cooler it is than it was then.
 
-- Each panel's sky comes from the real conditions: gradients for clear or overcast, and animated clouds, rain, snow, stars and lightning.
+- Each panel's sky is based on the time frame's conditions: gradients for clear or overcast and clouds, rain, snow, stars, or lightning.
 - Shows the current temperature, the day's high and low, and precipitation since midnight, for both now and then.
 - Search for any city, or tap the crosshair to use your current location.
 - Add more cities to compare in rows. Your list is saved in the browser for next time.
