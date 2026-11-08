@@ -20,6 +20,8 @@ Open the page and you see two panels for your city. On the left is the weather r
 
 The whole app is one static `index.html` file (about 500 lines) with no framework, no build step, no dependencies and no API keys. GitHub Pages serves it straight from `main`.
 
+Built with [Claude Code](https://claude.com/claude-code): I set the product direction, design and look, and iterated with Claude on the implementation.
+
 - **Data:** [Open-Meteo](https://open-meteo.com/) for the current forecast, the historical archive and city search. [BigDataCloud](https://www.bigdatacloud.com/)'s free client-side reverse geocoding turns "use my location" coordinates into a place name.
 - **Animation:** each sky is a `<canvas>`. A single `requestAnimationFrame` loop draws every panel. An `IntersectionObserver` skips panels that are off screen, so extra cities cost little.
 - **Correctness details:**
@@ -50,3 +52,7 @@ To change the comparison, edit the constants at the top of the script: `YEARS_BA
 ## Credits
 
 Weather data by [Open-Meteo.com](https://open-meteo.com/) (CC BY 4.0). Reverse geocoding by [BigDataCloud](https://www.bigdatacloud.com/).
+
+## License
+
+[MIT](LICENSE)
