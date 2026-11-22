@@ -13,6 +13,7 @@ Open the page and you see two panels for your city. On the left is the weather r
 - Each panel's sky is based on the time frame's conditions: gradients for clear or overcast and clouds, rain, snow, stars, or lightning.
 - Shows the current temperature, the day's high and low, and precipitation since midnight, for both now and then.
 - Search for any city, or tap the crosshair to use your current location.
+- Switch between °F (with inches) and °C (with mm). The choice is saved, and first-time visitors get the unit their browser's region uses.
 - Add more cities to compare in rows. Your list is saved in the browser for next time.
 - Opens on Boulder, Colorado for first-time visitors.
 
@@ -47,7 +48,7 @@ python3 -m http.server 8000
 
 Then open http://localhost:8000. Location lookup needs `localhost` or HTTPS.
 
-To change the comparison, edit the constants at the top of the script: `YEARS_BACK`, `UNIT` (`"fahrenheit"` or `"celsius"`) and `RAIN_UNIT` (`"inch"` or `"mm"`).
+To change how far back it looks, edit `YEARS_BACK` at the top of the script. Units are switched on the page: weather is fetched in °C and mm and converted in the browser, so the toggle doesn't refetch.
 
 ## Credits
 
