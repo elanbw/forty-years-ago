@@ -114,13 +114,20 @@ form button.go { font: inherit; font-weight: 600; color: var(--bg); background: 
 
 /* °F / °C switch, top right. It also switches precipitation between inches and mm. */
 .topbar { display: flex; justify-content: flex-end; margin-bottom: -12px; }
-.units { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 2px; background: var(--field); }
-.units button {
-  font: inherit; font-size: 13px; font-weight: 600; color: var(--muted); background: none; border: 0;
-  border-radius: 999px; padding: 4px 12px; cursor: pointer;
+/* One button: a tap anywhere flips it, and the dark thumb slides to the chosen side. */
+.units {
+  position: relative; display: inline-grid; grid-template-columns: 1fr 1fr; padding: 2px; cursor: pointer;
+  font: inherit; font-size: 13px; font-weight: 600; border: 1px solid var(--line); border-radius: 999px; background: var(--field);
 }
-.units button:hover { color: var(--fg); }
-.units button[aria-pressed="true"] { color: var(--bg); background: var(--fg); }
+.units .thumb {
+  position: absolute; top: 2px; bottom: 2px; left: 2px; width: calc(50% - 2px);
+  border-radius: 999px; background: var(--fg); transition: transform .25s ease;
+}
+.units[aria-checked="true"] .thumb { transform: translateX(100%); }
+.units .opt { position: relative; padding: 4px 12px; color: var(--muted); transition: color .25s ease; }
+.units:hover .opt { color: var(--fg); }
+.units[aria-checked="false"] .opt:first-of-type, .units[aria-checked="true"] .opt:last-of-type { color: var(--bg); }
+@media (prefers-reduced-motion: reduce) { .units .thumb, .units .opt { transition: none; } }
 
 /* Each city is its own row; a thin rule separates them. The first row can't be removed. */
 #rows { display: flex; flex-direction: column; gap: 24px; }
@@ -162,10 +169,9 @@ header .actions { display: flex; gap: 16px; align-items: baseline; }
 </head>
 <body>
 <div class="topbar">
-  <div class="units" role="group" aria-label="Units">
-    <button type="button" data-unit="F" aria-pressed="false">°F</button>
-    <button type="button" data-unit="C" aria-pressed="false">°C</button>
-  </div>
+  <button class="units" type="button" role="switch" aria-checked="false" aria-label="Celsius">
+    <span class="thumb" aria-hidden="true"></span><span class="opt">°F</span><span class="opt">°C</span>
+  </button>
 </div>
 <div id="rows"></div>
 <button id="add" type="button"><span class="plus" aria-hidden="true">+</span>Add a city</button>
@@ -442,6 +448,7 @@ async function load(row, lat, lon, name, here = false) {
 // Draw a row's numbers in the current unit. The comparison line waits until both panels have data.
 function render(row) {
   const $ = sel => row.el.querySelector(sel);
+  requestAnimationFrame(() => fit(row));
   for (const k of ["now", "then"]) {
     const v = row[k];
     if (!v) continue;
@@ -459,11 +466,46 @@ function render(row) {
 function setUnit(u) {
   unit = u;
   try { localStorage.setItem("unit", u); } catch {}
-  for (const b of document.querySelectorAll(".units button")) b.setAttribute("aria-pressed", String(b.dataset.unit === u));
+  document.querySelector(".units").setAttribute("aria-checked", String(u === "C"));
   for (const r of rows) render(r);
 }
-for (const b of document.querySelectorAll(".units button")) b.addEventListener("click", () => setUnit(b.dataset.unit));
+document.querySelector(".units").addEventListener("click", () => setUnit(unit === "F" ? "C" : "F"));
 setUnit(unit);
+
+/* ---------- Matching line counts ---------- */
+// The past uses a wider VHS font. Whatever fits on one line in the "now" panel must fit on one line
+// in the "then" panel too, so each slot there shrinks (via zoom) until it takes no more lines than its twin.
+const SLOTS = [".label", ".date", ".cond", ".stats"];
+
+// Count visual lines: text boxes that overlap vertically share a line.
+function lineCount(el) {
+  const range = document.createRange(), boxes = [];
+  const walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  while (walk.nextNode()) {
+    if (!walk.currentNode.textContent.trim()) continue;
+    range.selectNodeContents(walk.currentNode);
+    for (const r of range.getClientRects()) if (r.width && r.height) boxes.push(r);
+  }
+  boxes.sort((a, b) => a.top - b.top);
+  let lines = 0, bottom = -Infinity;
+  for (const r of boxes) {
+    if (r.top >= bottom - 2) { lines++; bottom = r.bottom; } else bottom = Math.max(bottom, r.bottom);
+  }
+  return lines;
+}
+
+function fit(row) {
+  for (const sel of SLOTS) {
+    const now = row.el.querySelector(".now " + sel), then = row.el.querySelector(".then " + sel);
+    then.style.zoom = "";
+    const target = Math.max(1, lineCount(now));
+    for (let z = 0.95; lineCount(then) > target && z >= 0.5; z -= 0.05) then.style.zoom = z.toFixed(2);
+  }
+}
+const fitAll = () => rows.forEach(fit);
+const refit = new ResizeObserver(() => requestAnimationFrame(fitAll));
+refit.observe(document.body);
+if (document.fonts) document.fonts.ready.then(fitAll);
 
 // Turn coordinates into "Boulder, Colorado". Open-Meteo can't do this, so it uses BigDataCloud's free browser lookup.
 async function placeName(lat, lon) {
