@@ -112,6 +112,16 @@ form .locate[aria-busy="true"] svg { animation: locating 1s ease-in-out infinite
 form button.go { font: inherit; font-weight: 600; color: var(--bg); background: var(--fg); border: 0; border-radius: 6px; padding: 8px 14px; cursor: pointer; }
 [hidden] { display: none !important; }
 
+/* °F / °C switch, top right. It also switches precipitation between inches and mm. */
+.topbar { display: flex; justify-content: flex-end; margin-bottom: -12px; }
+.units { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 2px; background: var(--field); }
+.units button {
+  font: inherit; font-size: 13px; font-weight: 600; color: var(--muted); background: none; border: 0;
+  border-radius: 999px; padding: 4px 12px; cursor: pointer;
+}
+.units button:hover { color: var(--fg); }
+.units button[aria-pressed="true"] { color: var(--bg); background: var(--fg); }
+
 /* Each city is its own row; a thin rule separates them. The first row can't be removed. */
 #rows { display: flex; flex-direction: column; gap: 24px; }
 .row { display: flex; flex-direction: column; gap: 20px; }
@@ -151,6 +161,12 @@ header .actions { display: flex; gap: 16px; align-items: baseline; }
 </style>
 </head>
 <body>
+<div class="topbar">
+  <div class="units" role="group" aria-label="Units">
+    <button type="button" data-unit="F" aria-pressed="false">°F</button>
+    <button type="button" data-unit="C" aria-pressed="false">°C</button>
+  </div>
+</div>
 <div id="rows"></div>
 <button id="add" type="button"><span class="plus" aria-hidden="true">+</span>Add a city</button>
 
@@ -212,15 +228,22 @@ header .actions { display: flex; gap: 16px; align-items: baseline; }
 
 <script>
 const YEARS_BACK = 40;
-const UNIT = "fahrenheit";   // or "celsius"
-const RAIN_UNIT = "inch";    // or "mm"
+// Data is always fetched in °C and mm, then shown in the chosen unit, so switching doesn't refetch.
+// °F pairs with inches and °C with mm. The choice is saved; a first visit picks by browser region.
+const F_REGIONS = ["US", "LR", "MM", "BS", "BZ", "KY", "PW", "FM", "MH"];
+let unit = (() => { try { return localStorage.getItem("unit"); } catch { return null; } })();
+if (unit !== "F" && unit !== "C") {
+  const region = (navigator.language || "en-US").split("-")[1]?.toUpperCase();
+  unit = !region || F_REGIONS.includes(region) ? "F" : "C";
+}
 
 const WMO = {0:"Clear",1:"Mostly clear",2:"Partly cloudy",3:"Overcast",45:"Fog",48:"Freezing fog",
   51:"Light drizzle",53:"Drizzle",55:"Heavy drizzle",56:"Freezing drizzle",57:"Freezing drizzle",
   61:"Light rain",63:"Rain",65:"Heavy rain",66:"Freezing rain",67:"Freezing rain",
   71:"Light snow",73:"Snow",75:"Heavy snow",77:"Snow grains",80:"Light showers",81:"Showers",82:"Heavy showers",
   85:"Snow showers",86:"Heavy snow showers",95:"Thunderstorm",96:"Thunderstorm with hail",99:"Thunderstorm with hail"};
-const deg = v => (v == null ? "–" : Math.round(v) + "°");
+const toUnit = c => (unit === "F" ? c * 9 / 5 + 32 : c);
+const deg = v => (v == null ? "–" : Math.round(toUnit(v)) + "°");
 const cond = c => WMO[c] ?? "";
 const pretty = iso => {
   const [y, m, d] = iso.split("-").map(Number);
@@ -231,8 +254,11 @@ const pretty = iso => {
 function precipSoFar(hourly, hour) {
   let sum = 0;
   for (let i = 1; i <= hour; i++) sum += hourly[i] || 0;
-  if (RAIN_UNIT === "inch") return sum < 0.005 ? "0 in" : sum.toFixed(2) + " in";
-  return sum < 0.05 ? "0 mm" : sum.toFixed(1) + " mm";
+  return sum;   // mm
+}
+function precip(mm) {
+  if (unit === "F") { const inch = mm / 25.4; return inch < 0.005 ? "0 in" : inch.toFixed(2) + " in"; }
+  return mm < 0.05 ? "0 mm" : mm.toFixed(1) + " mm";
 }
 
 // Same calendar day, 40 years earlier. Feb 29 falls back to Feb 28 when that year has none.
@@ -382,18 +408,18 @@ async function load(row, lat, lon, name, here = false) {
   row.place = { lat, lon, name, here };
   save();
   try {
-    const q = `latitude=${lat}&longitude=${lon}&temperature_unit=${UNIT}&precipitation_unit=${RAIN_UNIT}&timezone=auto`;
+    const q = `latitude=${lat}&longitude=${lon}&timezone=auto`;
     const now = await getJSON(`https://api.open-meteo.com/v1/forecast?${q}` +
       `&current=temperature_2m,weather_code,is_day&hourly=precipitation&daily=temperature_2m_max,temperature_2m_min&forecast_days=1`);
     if (stale()) return;
     const [today, clock] = now.current.time.split("T");
     const hour = Number(clock.slice(0, 2));
     now$(".date").textContent = pretty(today);
-    now$(".temp").textContent = deg(now.current.temperature_2m);
     now$(".cond").textContent = cond(now.current.weather_code);
-    now$(".hi").textContent = deg(now.daily.temperature_2m_max[0]);
-    now$(".lo").textContent = deg(now.daily.temperature_2m_min[0]);
-    now$(".rain").textContent = precipSoFar(now.hourly.precipitation, hour);
+    row.now = { temp: now.current.temperature_2m, hi: now.daily.temperature_2m_max[0], lo: now.daily.temperature_2m_min[0],
+      rain: precipSoFar(now.hourly.precipitation, hour) };
+    row.then = null;
+    render(row);
     row.skies.now.set(sceneFor(now.current.weather_code, now.current.is_day !== 0));
 
     const past = pastDate(today);
@@ -401,21 +427,43 @@ async function load(row, lat, lon, name, here = false) {
     const then = await getJSON(`https://archive-api.open-meteo.com/v1/archive?${q}` +
       `&start_date=${past}&end_date=${past}&hourly=temperature_2m,weather_code,is_day,precipitation&daily=temperature_2m_max,temperature_2m_min`);
     if (stale()) return;
-    const tThen = then.hourly.temperature_2m[hour];
-    then$(".temp").textContent = deg(tThen);
     then$(".cond").textContent = cond(then.hourly.weather_code[hour]);
-    then$(".hi").textContent = deg(then.daily.temperature_2m_max[0]);
-    then$(".lo").textContent = deg(then.daily.temperature_2m_min[0]);
-    then$(".rain").textContent = precipSoFar(then.hourly.precipitation, hour);
+    row.then = { temp: then.hourly.temperature_2m[hour], hi: then.daily.temperature_2m_max[0], lo: then.daily.temperature_2m_min[0],
+      rain: precipSoFar(then.hourly.precipitation, hour) };
+    render(row);
     row.skies.then.set(sceneFor(then.hourly.weather_code[hour] ?? 3, then.hourly.is_day[hour] !== 0));
-
-    const d = Math.round(now.current.temperature_2m) - Math.round(tThen);
-    $(".diff").textContent = d === 0 ? "Same temperature as this hour 40 years ago."
-      : `${Math.abs(d)}° ${d > 0 ? "warmer" : "cooler"} than this hour 40 years ago.`;
   } catch (e) {
-    if (!stale()) $(".diff").textContent = "Couldn't load the weather. Check your connection and reload.";
+    if (stale()) return;
+    row.now = row.then = null;   // so a unit switch doesn't paint over the error
+    $(".diff").textContent = "Couldn't load the weather. Check your connection and reload.";
   }
 }
+
+// Draw a row's numbers in the current unit. The comparison line waits until both panels have data.
+function render(row) {
+  const $ = sel => row.el.querySelector(sel);
+  for (const k of ["now", "then"]) {
+    const v = row[k];
+    if (!v) continue;
+    $(`.${k} .temp`).textContent = deg(v.temp);
+    $(`.${k} .hi`).textContent = deg(v.hi);
+    $(`.${k} .lo`).textContent = deg(v.lo);
+    $(`.${k} .rain`).textContent = precip(v.rain);
+  }
+  if (!row.now || !row.then || row.now.temp == null || row.then.temp == null) return;
+  const d = Math.round(toUnit(row.now.temp)) - Math.round(toUnit(row.then.temp));
+  $(".diff").textContent = d === 0 ? "Same temperature as this hour 40 years ago."
+    : `${Math.abs(d)}°${unit} ${d > 0 ? "warmer" : "cooler"} than this hour 40 years ago.`;
+}
+
+function setUnit(u) {
+  unit = u;
+  try { localStorage.setItem("unit", u); } catch {}
+  for (const b of document.querySelectorAll(".units button")) b.setAttribute("aria-pressed", String(b.dataset.unit === u));
+  for (const r of rows) render(r);
+}
+for (const b of document.querySelectorAll(".units button")) b.addEventListener("click", () => setUnit(b.dataset.unit));
+setUnit(unit);
 
 // Turn coordinates into "Boulder, Colorado". Open-Meteo can't do this, so it uses BigDataCloud's free browser lookup.
 async function placeName(lat, lon) {
